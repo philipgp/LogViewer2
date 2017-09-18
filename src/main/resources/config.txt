@@ -1,0 +1,65 @@
+{ 
+  "applications": [
+    {
+      "applicationName": "EISQmiles",
+      "metadataKeys": [
+        "ffpNumber",
+        "customerProfileId"
+      ],
+      "loggerNames":["applog"],
+      "environments": [
+        {
+          "name": "DEV",
+          "servers": [
+            {
+              "name": "local",
+              "hostNameOrIp": "localhost",
+              "port": 22,
+			  "userName":"test",
+			  "password":"mytpas123",
+			  "promptPassword":false,
+			  "promptUserName":false,
+			  "serverLogFolder":"",
+			  "loggers":[
+			  {
+				"logFileName":"",
+				"archiveFolder":"",
+				"name":"applog",
+				"logFormat":""
+			  }
+			  ]
+            }
+          ]
+        }
+      ]
+    }, {
+      "applicationName": "NSP",
+      "loggerNames":["applog"],
+      "environments": [
+        {
+          "name": "SIT",
+          "servers": [
+            {
+              "name": "SIT",
+              "hostNameOrIp": "DOHQDNSP02",
+              "port": 22,
+			  "userName":"nspuser",
+			  "password":"nsp123",
+			  "promptPassword":false,
+			  "promptUserName":false,
+			  "serverLogFolder":"/app/logs/jboss/mbe/AS_SIT_MBE01/server.log",
+			  "loggers":[
+			  {
+			  	"name":"applog2",
+				"logFileName":"/jboss/applications/mbe/deployments/eislog1/log.log",
+				"archiveFolder":"",
+				"logFormat":"%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{35} - %msg%n"
+			  }
+			  ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

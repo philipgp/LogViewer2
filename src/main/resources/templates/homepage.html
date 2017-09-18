@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <title>Title</title>
+    <script>
+    function hideAllEnvironment(){
+        $(".envoptionsdiv").hide();
+    }
+    function hideAllUnderApplication(){
+hideAllEnvironment();
+hideAllUnderEnvironment();
+    }
+    function hideAllUnderEnvironment(){
+$(".servoptions").parent().hide();
+$(".servoptions").prop('checked',false);
+hideAllUnderServer();
+    }
+     function hideAllUnderServer(){
+    $(".loggeroptions").parent().hide();
+    $(".loggeroptions").prop('checked',false);
+  //  hideAllUnderStreamType();
+    }
+    function hideAllUnderStreamType(){
+    $('#streamDiv').hide();
+    hideAllFromToDateType();
+    }
+    function hideAllFromToDateType(){
+    $('#fromtodateDiv').hide();
+    }
+    function hideGoButton(){
+    $("#gobutton").hide();
+    }
+    function showEnvironmentForAppliction(appname){
+
+    hideAllUnderApplication();
+    hideAllUnderStreamType();
+    hideGoButton();
+    //$('#streamDiv').show();
+    $(".envoptions").each(function( index ) {
+  var currentApp = $(this).attr('app');
+  if(currentApp == appname){
+  $(this).parent().show();
+  }
+});
+$("#envDiv").show();
+    }
+
+    function showServersForEnvironment(environment){
+
+    hideAllUnderEnvironment();
+    $(".servoptions").each(function( index ) {
+  var currentEnv = $(this).attr('env');
+  if(currentEnv == environment){
+  $(this).parent().show();
+  }
+});
+$("#servDiv").show();
+    }
+
+     function showLoggersForServer(app){
+
+    hideAllUnderServer();
+    $('#loggerDiv').show();
+    $(".loggeroptions").each(function( index ) {
+  var currentApp = $(this).attr('app');
+  if(currentApp == app){
+  $(this).parent().show();
+  }
+});
+
+    }
+    function showstreamers(){
+    $("#streamDiv").show();
+    }
+    function showFromToDate(){
+$("#fromtodateDiv").show();
+    }
+    function showGoButton(){
+    $("#gobutton").show();
+    }
+
+
+
+function sync(){
+ var visibleApp = $(".appoptions:visible")[0];
+ var visibleEnvironment = $(".envoptions:visible")[0];
+ var checkedLoggers = $(".loggeroptions:checked");
+ var checkedServers = $(".servoptions:checked");
+var request=new Object();;
+request.appName=$(visibleApp).attr('value');
+request.environment=$(visibleEnvironment).attr('env');
+var loggers=[];
+request.loggerNames=loggers;
+ $(checkedLoggers).each(function( index ) {
+var logger =$(this).attr('logger');
+loggers.push(logger);
+  });
+var servers=[];
+request.servers=servers;
+ $(checkedServers).each(function( index ) {
+var server = new Object();
+server.name=$(this).attr('servName');
+servers.push(server);
+  });
+var requestJson = JSON.stringify(request);
+$.ajax({
+ dataType: 'json',
+  method: "POST",
+headers: {"Content-Type": "application/json"},
+  url: "sync",
+  data: requestJson
+})
+  .done(function( msg ) {
+    alert( "Login Result " + msg.status );
+  });
+
+
+
+}
+
+
+function checkAndDoLogin(server){
+if($(server).attr('loginRequired')=='true'){
+var password;
+if($(server).attr('promptPassword')=='true'){
+ password = prompt("Enter password ");
+}else
+password = $(server).attr('password');
+
+var userName;
+if($(server).attr('promptUserName')=='true'){
+ userName = prompt("Enter username ");
+}else
+userName = $(server).attr('userName');
+
+var name=$(server).attr("name");
+var hostname=$(server).attr("hostname");
+$.ajax({
+  method: "POST",
+  url: "login",
+  data: { userName: userName, password: password ,name:name,hostname:hostname}
+})
+  .done(function( msg ) {
+    alert( "Login Result " + msg.status );
+if(msg.status=='SUCCESS'){
+$(server).attr('loginRequired','false');
+}else{
+$(this).prop('checked', false);
+}
+  });
+}
+}
+ 
+$(document).ready(function(){
+
+     $(".appoptions").click(function(){
+        showEnvironmentForAppliction($(this).attr("value"));
+        hideGoButton();
+    });
+    $(".envoptions").click(function(){
+        showServersForEnvironment($(this).attr("value"));
+        showLoggersForServer($('.appoptions:checked').attr("value"));
+        showstreamers();
+        showGoButton();
+
+    });
+     $("#fromtostream").click(function(){
+        showFromToDate();
+    });
+ $(".servoptions").click(function(){
+        checkAndDoLogin($(this));
+    });
+
+ $("#gobutton").click(function(){
+        sync();
+    });
+
+});
+</script>
+</head>
+<body>
+<div id ="appDiv">
+    <fieldset id="appgroup">
+        <div th:each="application : ${config.applications}">
+            <input class="appoptions" type="radio" th:value="${application.applicationName}" th:attr="app=${application.applicationName}" value="eis" name="appgroup"></input>
+            <span th:text="${application.applicationName}">EIS</span>
+        </div>
+    </fieldset>
+
+</div>
+<div id ="envDiv" >
+    <fieldset id="envgroup">
+        <div th:each="application : ${config.applications}">
+            <div th:each="environment : ${application.environments}">
+        <div class="envoptionsdiv" hidden='true'>
+        <input class="envoptions" type="radio"
+               th:value="${application.applicationName}+'-'+${environment.name}"
+               name="envgroup" value="eis-sit" app="eis" env="sit"
+               th:attr="env=${environment.name},app=${application.applicationName}"></input>
+            <span th:text="${environment.name}">SIT</span>
+        </div>
+        </div>
+        </div>
+    </fieldset> 
+</div>
+<div id ="servDiv" hidden='true'>
+    <fieldset id="servgroup">
+        <div th:each="application : ${config.applications}">
+            <div th:each="environment : ${application.environments}">
+                <div th:each="server : ${environment.servers}">
+        <div class="servoptionsdiv" hidden='true'>
+            <input class="servoptions" type="checkbox"
+                   th:attr="servName=${server.name},appName=${application.applicationName},envName=${environment.name},hostname=${server.hostNameOrIp},promptPassword=${server.promptPassword},promptUserName=${server.promptUserName},loginRequired=${server.loginRequired},userName=${server.userName},password=${server.password},env=${application.applicationName} + '-'+ ${environment.name}"
+
+                   th:value="${application.applicationName} + '-'+ ${environment.name}+'-'+${server.name}"
+                   value="eis-sit-s1" promptUserName="true" loginRequired="true" promptPassword="true" hostname="localhost" env="eis-sit"  envName="sit" appName="EISQmiles"
+                   name="servgroup" userName="" password="" servName="sit1"
+                   ></input>
+            <span th:text="${server.name}">EIS SIT1</span>
+
+        </div>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+</div>
+<div id ="loggerDiv" hidden='true'>
+    <fieldset id="loggergroup">
+        <div th:each="application : ${config.applications}">
+
+                    <div th:each="logger : ${application.loggerNames}">
+        <div class="loggeroptionsdiv" hidden='true'>
+            <input class="loggeroptions" type="checkbox"
+                   th:value="${application.applicationName} +'-'+ ${logger}"
+                   value="eis-log1" logger="applog" app="eis"
+                   name="loggergroup" th:attr="app=${application.applicationName},logger=${logger}" />
+            <span th:text="${logger}">App Server</span>
+        </div>
+                    
+            </div>
+        </div>
+    </fieldset>
+</div>
+<div id ="streamDiv" hidden='true'>
+    <fieldset id="streamgroup">
+        <div class="streamoptionsdiv" >
+            <input class="streamoptions"  id = 'livestream' type="radio" value="live" name="streamgroup"/>
+            <span>Live</span>
+        </div>
+        <div class="streamoptionsdiv" >
+            <input class="streamoptions" id ='fromtostream' type="radio" value="fromto" name="streamgroup"/>
+            <span>From To Date</span>
+        </div>
+    </fieldset>
+</div>
+<div id ="fromtodateDiv" hidden='true'>
+    <span>Enter From Date(dd-MM-yyyy)</span><input type="text" id="fromdate"/>
+    <span>Enter To Date(dd-mm-yyyy)</span><input type="text" id="todate"/>
+</div>
+<input id ='gobutton' hidden='true' type="button" value="Go" name="streamgroup"/>
+</body>
+</html>
